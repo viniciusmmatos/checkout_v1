@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Cadastro de Produtos</title>
+  <script type="module" src="/js/produtos.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-100 p-6">
+  <div class="max-w-3xl mx-auto bg-white p-6 rounded shadow">
+    <ul class="flex">
+      <li class="mr-6">
+        <a class="text-blue-500 hover:text-blue-800" href="checkout.html">Checkout</a>
+      </li>
+    </ul>
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+      <input id="nome" type="text" placeholder="Nome do produto" class="col-span-2 border p-2 rounded" />
+      <input id="preco" type="number" placeholder="Preço R$" class="border p-2 rounded" />
+      <select id="classe" class="border p-2 rounded">
+        <option value="">Tipo</option>
+        <option value="BEBIDAS">BEBIDAS</option>
+        <option value="DOCES">DOCES</option>
+        <option value="PASTEIS">PASTEIS</option>
+        <option value="OUTROS">DIVERSOS</option>
+      </select>
+      <input id="estoque" type="number" class="border p-2 rounded" placeholder="Qtd. estoque" />
+    </div>
+
+    <div class="flex justify-end mb-6">
+      <button id="cadastrar" class="bg-blue-600 text-white px-6 py-2 rounded shadow hover:bg-blue-700">Cadastrar
+        Produto</button>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border">
+        <thead class="bg-gray-200">
+          <tr>
+            <th class="px-4 py-2 border">Produto</th>
+            <th class="px-4 py-2 border">Preço</th>
+            <th class="px-4 py-2 border">Tipo</th>
+            <th class="px-4 py-2 border">Estoque</th>
+          </tr>
+        </thead>
+        <tbody id="tabela-produtos" class="bg-white text-sm"></tbody>
+      </table>
+    </div>
+  </div>
+</body>
+
+</html>
