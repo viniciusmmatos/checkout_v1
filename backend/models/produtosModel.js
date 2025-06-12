@@ -28,3 +28,24 @@ export function atualizarEstoque(id, qtd) {
         produto.estoque -= qtd;
     }
 }
+
+export function atualizarProduto(id, dados) {
+    const produto = buscarProduto(id);
+    if (produto) {
+        if (dados.nome) produto.nome = dados.nome;
+        if (dados.classe) produto.classe = dados.classe;
+        if (!isNaN(dados.valor)) produto.valor = parseFloat(dados.valor);
+        if (!isNaN(dados.estoque)) produto.estoque = parseInt(dados.estoque);
+        return produto;
+    }
+    return null;
+}
+
+export function removerProduto(id) {
+    const index = produtos.findIndex(p => p.id === id);
+    if (index !== -1) {
+        produtos.splice(index, 1)
+        return true;
+    }
+    return false;
+}

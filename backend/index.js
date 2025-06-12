@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 
 import produtosRoutes from './routes/produtosRoutes.js';
 import pedidosRoutes from './routes/pedidosRoutes.js';
+import relatorioRoutes from './routes/relatorioRoutes.js';
 
 const app = express();
 const PORT = 3000;
@@ -20,6 +21,7 @@ app.use(express.json());
 // Rotas de API
 app.use('/api/produtos', produtosRoutes);
 app.use('/api/pedidos', pedidosRoutes);
+app.use('/api/relatorio', relatorioRoutes);
 
 // Servir arquivos estáticos do frontend
 app.use(express.static(path.join(__dirname, '../frontend')));

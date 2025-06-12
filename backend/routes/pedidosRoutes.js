@@ -1,5 +1,5 @@
 import express from 'express';
-import { listarPedidos, adicionarPedido } from '../models/pedidosModel.js';
+import { listarPedidos, adicionarPedido, removerPedido } from '../models/pedidosModel.js';
 import { buscarProduto } from '../models/produtosModel.js';
 
 const router = express.Router();
@@ -25,6 +25,16 @@ router.post('/', (req, res) => {
         res.status(201).json(pedido);
     } catch (erro) {
         res.status(400).json({ erro: erro.message });
+    }
+});
+
+router.delete('/:id',(req, res) =>{
+    const {id} = req.params;
+    const sucesso = removerPedido(parseInt(id));
+    if(sucesso){
+        res.sendStatus(204);
+    } else{
+        res.status(404).json({erro: 'Pedido não encontrado.'})
     }
 });
 

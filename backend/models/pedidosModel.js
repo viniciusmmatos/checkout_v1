@@ -9,12 +9,21 @@ export function listarPedidos() {
 
 export function adicionarPedido({ itens, metodoPagamento, nome, equipe }) {
     let total = 0;
+    const itensCompletos = [];
 
     itens.forEach(({ id, quantidade }) => {
         const produto = buscarProduto(id);
         if (produto && produto.estoque >= quantidade) {
-            total += produto.valor * quantidade;
+            const subtotal = produto.valor * quantidade;
+            total += subtotal;
             atualizarEstoque(id, quantidade);
+
+            itensCompletos.push({
+                id,
+                nome: produto.nome,
+                quantidade,
+                valorUnitario: produto.valor
+            });
         } else {
             throw new Error(`Estoque insuficiente para o produto ${produto?.nome || id}`);
         }
@@ -31,7 +40,7 @@ export function adicionarPedido({ itens, metodoPagamento, nome, equipe }) {
     const pedido = {
         id: idPedido++,
         date: new Date().toISOString(),
-        itens,
+        itens: itensCompletos,
         total,
         metodoPagamento,
         nome: metodoPagamento === 'PENDENTE' ? nome : '',
@@ -40,4 +49,25 @@ export function adicionarPedido({ itens, metodoPagamento, nome, equipe }) {
 
     pedidos.push(pedido);
     return pedido;
+}
+
+export function atualizarProduto(id, dados) {
+    const produto = buscarProduto(id);
+    if (produto) {
+        if (dados.nome) produto.nome = dados.nome;
+        if (dados.classe) produto.classe = dados.classe;
+        if (!isNaN(dados.valor)) produto.valor = parseFloat(dados.valor);
+        if (!isNaN(dados.estoque)) produto.estoque = parseInt(dados.estoque);
+        return produto;
+    }
+    return null;
+}
+
+export function removerPedido(id) {
+    const index = pedidos.findIndex(p => p.id === id);
+    if (index !== -1) {
+        pedidos.splice(index, 1);
+        return true;
+    }
+    return false;
 }
