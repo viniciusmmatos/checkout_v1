@@ -1,18 +1,24 @@
-// backend/controllers/relatorioController.js
+// backend/controllers/relatorioHtmlController.js
 
-import PDFDocument from 'pdfkit';
+import puppeteer from 'puppeteer';
 import { listarPedidos } from '../models/pedidosModel.js';
 
-export function gerarRelatorioPDF(req, res) {
-  const pedidos = listarPedidos();
-
-  // Cálculo de totais
+function gerarHTMLRelatorio(pedidos) {
   let totalVendido = 0;
   let totalItens = 0;
   const vendasPorProduto = {};
+  const vendasPorPagamento = {
+    'DINHEIRO': 0,
+    'PIX': 0,
+    'CARTÃO DE CRÉDITO': 0,
+    'CARTÃO DE DÉBITO': 0,
+    'PENDENTE': 0
+  };
 
   pedidos.forEach(p => {
     totalVendido += p.total;
+    vendasPorPagamento[p.metodoPagamento] += p.total;
+
     p.itens.forEach(i => {
       totalItens += i.quantidade;
       if (!vendasPorProduto[i.nome]) {
@@ -24,100 +30,117 @@ export function gerarRelatorioPDF(req, res) {
   });
 
   const produtosOrdenados = Object.entries(vendasPorProduto)
-    .sort((a, b) => b[1].quantidade - a[1].quantity)
-    .slice(0, 5); // top 5 produtos
+    .sort((a, b) => b[1].quantidade - a[1].quantidade);
 
-  const doc = new PDFDocument({ size: 'A4', margin: 40 });
+  return `
+  <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h1, h2 { text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; font-size: 12px; }
+        th { background: #eee; }
+        .right { text-align: right; }
+      </style>
+    </head>
+    <body>
+      <h1>Relatório de Pedidos</h1>
+
+      <h2>Resumo</h2>
+      <table>
+        <tr>
+          <th>Total vendido (R$)</th>
+          <th>Total de pedidos</th>
+          <th>Total de itens vendidos</th>
+        </tr>
+        <tr>
+          <td class="right">${totalVendido.toFixed(2)}</td>
+          <td class="right">${pedidos.length}</td>
+          <td class="right">${totalItens}</td>
+        </tr>
+      </table>
+
+      <h2>Vendas por Produto</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Qtd Vendida</th>
+            <th>Faturamento (R$)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${produtosOrdenados.map(([nome, dados]) => `
+            <tr>
+              <td>${nome}</td>
+              <td class="right">${dados.quantidade}</td>
+              <td class="right">${dados.valor.toFixed(2)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+
+      <h2>Faturamento por Método de Pagamento</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Método de Pagamento</th>
+            <th>Faturamento (R$)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${Object.entries(vendasPorPagamento).map(([metodo, valor]) => `
+            <tr>
+              <td>${metodo}</td>
+              <td class="right">${valor.toFixed(2)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+
+      <h2>Extrato de Pedidos</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Data</th>
+            <th>Total</th>
+            <th>Pagamento</th>
+            <th>Cliente</th>
+            <th>Equipe</th>
+            <th>Itens</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${pedidos.map(p => `
+            <tr>
+              <td>${p.id}</td>
+              <td>${new Date(p.date).toLocaleString('pt-BR')}</td>
+              <td class="right">R$ ${p.total.toFixed(2)}</td>
+              <td>${p.metodoPagamento}</td>
+              <td>${p.metodoPagamento === 'PENDENTE' ? p.nome : '-'}</td>
+              <td>${p.metodoPagamento === 'PENDENTE' ? p.equipe : '-'}</td>
+              <td>${p.itens.map(i => `${i.nome} (${i.quantidade})`).join(', ')}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </body>
+  </html>
+  `;
+}
+
+export async function gerarRelatorioPDF(req, res) {
+  const pedidos = listarPedidos();
+  const html = gerarHTMLRelatorio(pedidos);
+
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
+  await page.setContent(html, { waitUntil: 'networkidle0' });
+
+  const buffer = await page.pdf({ format: 'A4', printBackground: true });
+  await browser.close();
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', 'attachment; filename=relatorio_pedidos.pdf');
-  doc.pipe(res);
-
-  // Título
-  doc.fontSize(18).text('Relatório de Pedidos', { align: 'center' });
-  doc.moveDown();
-
-  // RESUMO GERAL
-  doc.fontSize(14).text('Resumo Geral:', { underline: true });
-  doc.moveDown(0.5);
-  doc.fontSize(12);
-  doc.text(`Total vendido: R$ ${totalVendido.toFixed(2)}`);
-  doc.text(`Total de pedidos: ${pedidos.length}`);
-  doc.text(`Total de itens vendidos: ${totalItens}`);
-  doc.moveDown(1);
-
-  // VENDAS POR PRODUTO
-  doc.fontSize(14).text('Vendas por Produto:', { underline: true });
-  doc.moveDown(0.5);
-  Object.entries(vendasPorProduto).forEach(([nome, dados]) => {
-    doc.text(`${nome}: ${dados.quantidade} unidades - R$ ${dados.valor.toFixed(2)}`);
-  });
-  doc.moveDown(1);
-
-  // TOP 5 PRODUTOS
-  doc.fontSize(14).text('Top 5 Produtos Mais Vendidos:', { underline: true });
-  doc.moveDown(0.5);
-  produtosOrdenados.forEach(([nome, dados], index) => {
-    doc.text(`${index + 1}. ${nome} - ${dados.quantidade} unidades`);
-  });
-  doc.moveDown(1);
-
-  // EXTRATO DE PEDIDOS
-  doc.fontSize(14).text('Extrato de Pedidos:', { underline: true });
-  doc.moveDown(0.5);
-
-  const tableHeaders = ['ID', 'Data', 'Total', 'Pagamento', 'Cliente', 'Equipe', 'Itens'];
-  const colWidths = [30, 100, 60, 90, 80, 80, 200];
-  const startX = doc.x;
-  let y = doc.y;
-
-  doc.font('Helvetica-Bold').fontSize(10);
-  tableHeaders.forEach((header, i) => {
-    doc.rect(startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0), y, colWidths[i], 18).fillAndStroke('#eee', '#000');
-    doc.fillColor('#000').text(header, startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0) + 2, y + 4, {
-      width: colWidths[i] - 4,
-      align: 'left',
-      lineBreak: false
-    });
-  });
-  doc.moveDown();
-  y += 18;
-
-  doc.font('Helvetica').fontSize(9);
-
-  pedidos.forEach(p => {
-    const data = new Date(p.date).toLocaleString('pt-BR');
-    const itensFormatados = p.itens.map(i => `${i.nome} (${i.quantidade})`).join(', ');
-    const cliente = p.metodoPagamento === 'PENDENTE' ? p.nome : '-';
-    const equipe = p.metodoPagamento === 'PENDENTE' ? p.equipe : '-';
-
-    const row = [
-      p.id.toString(),
-      data,
-      `R$ ${p.total.toFixed(2)}`,
-      p.metodoPagamento,
-      cliente,
-      equipe,
-      itensFormatados
-    ];
-
-    row.forEach((text, i) => {
-      const x = startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0);
-      doc.rect(x, y, colWidths[i], 16).stroke();
-      doc.text(text, x + 2, y + 4, {
-        width: colWidths[i] - 4,
-        align: i === 2 ? 'right' : 'left', // total column aligned right
-        lineBreak: false,
-        ellipsis: true
-      });
-    });
-
-    y += 16;
-    if (y > doc.page.height - 50) {
-      doc.addPage();
-      y = 40;
-    }
-  });
-
-  doc.end();
+  res.send(buffer);
 }
