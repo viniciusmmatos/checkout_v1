@@ -1,5 +1,3 @@
-// backend/controllers/relatorioHtmlController.js
-
 import puppeteer from 'puppeteer';
 import { listarPedidos } from '../models/pedidosModel.js';
 
