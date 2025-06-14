@@ -7,6 +7,12 @@ const totalSpan = document.getElementById('total-pedido');
 const metodoPagamento = document.getElementById('metodo-pagamento');
 const inputNome = document.getElementById('nome');
 const inputEquipe = document.getElementById('equipe');
+const socket = io();
+
+// Quando receber notificação de mudança de produtos
+socket.on('produtos-atualizados', () => {
+  carregarProdutos();
+});
 
 const API_PRODUTOS = 'http://localhost:3000/api/produtos';
 const API_PEDIDOS = 'http://localhost:3000/api/pedidos';
@@ -16,17 +22,32 @@ let carrinho = [];
 
 async function carregarProdutos() {
   const resp = await fetch(API_PRODUTOS);
-  listaProdutos = await resp.json();
+  const produtos = await resp.json();
 
-  selectProduto.innerHTML = '<option>Selecione um produto</option>';
-  listaProdutos.forEach(p => {
-    const opt = document.createElement('option');
-    opt.value = p.id;
-    opt.textContent = `${p.nome} - R$ ${p.valor.toFixed(2)} (${p.estoque} un)`;
-    selectProduto.appendChild(opt);
+  // Agrupar por classe
+  const grupos = {};
+  produtos.forEach(p => {
+    if (!grupos[p.classe]) grupos[p.classe] = [];
+    grupos[p.classe].push(p);
   });
-}
 
+  selectProduto.innerHTML = ''; // Limpa o select
+
+  Object.entries(grupos).forEach(([classe, lista]) => {
+    const optgroup = document.createElement('optgroup');
+    optgroup.label = classe;
+
+    lista.forEach(produto => {
+      const opt = document.createElement('option');
+      opt.value = produto.id;
+      opt.textContent = `${produto.nome} - R$ ${produto.valor.toFixed(2)} (${produto.estoque} un)`;
+      optgroup.appendChild(opt);
+    });
+
+    selectProduto.appendChild(optgroup);
+  });
+  listaProdutos = produtos;
+}
 function atualizarTabela() {
   tabela.innerHTML = '';
   let total = 0;

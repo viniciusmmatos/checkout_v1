@@ -20,7 +20,7 @@ function gerarHTMLRelatorio(pedidos) {
     p.itens.forEach(i => {
       totalItens += i.quantidade;
       if (!vendasPorProduto[i.nome]) {
-        vendasPorProduto[i.nome] = { quantidade: 0, valor: 0 };
+        vendasPorProduto[i.nome] = { quantidade: 0, valor: 0, valorUnitario: i.valorUnitario };
       }
       vendasPorProduto[i.nome].quantidade += i.quantidade;
       vendasPorProduto[i.nome].valor += i.quantidade * i.valorUnitario;
@@ -64,6 +64,7 @@ function gerarHTMLRelatorio(pedidos) {
         <thead>
           <tr>
             <th>Produto</th>
+            <th> Valor unitario (R$)</th>
             <th>Qtd Vendida</th>
             <th>Faturamento (R$)</th>
           </tr>
@@ -72,6 +73,7 @@ function gerarHTMLRelatorio(pedidos) {
           ${produtosOrdenados.map(([nome, dados]) => `
             <tr>
               <td>${nome}</td>
+              <td class="right">${dados.valorUnitario.toFixed(2)}</td>
               <td class="right">${dados.quantidade}</td>
               <td class="right">${dados.valor.toFixed(2)}</td>
             </tr>`).join('')}

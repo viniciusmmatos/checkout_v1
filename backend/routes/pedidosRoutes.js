@@ -1,6 +1,7 @@
 import express from 'express';
 import { listarPedidos, adicionarPedido, removerPedido } from '../models/pedidosModel.js';
 import { buscarProduto } from '../models/produtosModel.js';
+import { io } from '../index.js';
 
 const router = express.Router();
 
@@ -11,7 +12,7 @@ router.get('/', (req, res) => {
         itens:pedido.itens.map(item =>{
             const produto = buscarProduto(item.id);
             return {
-                nome:produto.nome,
+                nome:produto ? produto.nome: 'Produto removido',
                 quantidade: item.quantidade
             };
         })
@@ -23,6 +24,7 @@ router.post('/', (req, res) => {
     try {
         const pedido = adicionarPedido(req.body);
         res.status(201).json(pedido);
+        io.emit('produtos-atualizados');
     } catch (erro) {
         res.status(400).json({ erro: erro.message });
     }

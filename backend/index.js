@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { Server } from 'socket.io';
+import http from 'http'
 
 import produtosRoutes from './routes/produtosRoutes.js';
 import pedidosRoutes from './routes/pedidosRoutes.js';
@@ -9,6 +11,14 @@ import relatorioRoutes from './routes/relatorioRoutes.js';
 
 const app = express();
 const PORT = 3000;
+const server = http.createServer(app);
+const io = new Server (server, {
+    cors:{
+        origin: '*'
+    }
+})
+
+export { io };
 
 // Em ESModules, precisamos obter __dirname manualmente
 const __filename = fileURLToPath(import.meta.url);
@@ -32,6 +42,6 @@ app.get('/', (req, res) => {
 });
 
 // Inicialização do servidor
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
 });
