@@ -34,13 +34,47 @@ async function carregarProdutos() {
 }
 
 async function cadastrarProduto() {
-  const novoProduto = {
-    nome: nomeInput.value,
-    classe: classeInput.value,
-    estoque: parseInt(estoqueInput.value),
-    valor: parseFloat(precoInput.value)
-  };
+  const nome = nomeInput.value.trim();
+  const classe = classeInput.value;
+  const estoque = parseInt(estoqueInput.value);
+  const valor = parseFloat(precoInput.value);
 
+  //RESET STYLUS ERRO
+  nomeInput.classList.remove('border-red-500');
+  classeInput.classList.remove('border-red-500');
+  estoqueInput.classList.remove('border-red-500');
+  precoInput.classList.remove('border-red-500');
+  const msgErro = document.getElementById('mensagem-erro');
+  msgErro.classList.remove('hidden');
+  msgErro.textContent = ''
+
+  //VALIDAÇÃO DADOS PREENCHIDOS
+  let temErro = false;
+  if(!nome){
+    nomeInput.classList.add('border-red-500');
+    temErro = true;
+  }
+  if(!classe){
+    classeInput.classList.add('border-red-500');
+    temErro = true;
+  }
+  if(isNaN(estoque)){
+    estoqueInput.classList.add('border-red-500');
+    temErro = true;
+  }
+  if(isNaN(valor)){
+    precoInput.classList.add('border-red-500');
+    temErro = true;
+  }
+
+  if(temErro){
+    msgErro.textContent = '❗ Preencha todos os campos corretamente antes de cadastrar.'
+    msgErro.classList.remove('hidden');
+    return;
+  }
+
+
+  const novoProduto = { nome, classe, estoque, valor };
   let resposta;
 
   if (editandoId) {
@@ -64,6 +98,7 @@ async function cadastrarProduto() {
 
   if (resposta.ok) {
     // Limpar campos e recarregar lista
+    alert(editandoId ? 'Produto atualizado com sucesso!' : 'Produto cadastrado com sucesso!')
     nomeInput.value = '';
     classeInput.value = '';
     estoqueInput.value = '';
@@ -92,16 +127,16 @@ window.editarProduto = function (id) {
 
 window.excluirProduto = async function (id) {
   const confirmacao = confirm('Tem certeza que deseja excluir o produto?');
-  if(!confirmacao) return;
+  if (!confirmacao) return;
 
   const resposta = await fetch(`${API}/${id}`, {
     method: 'DELETE'
   });
 
-  if(resposta.status === 204){
+  if (resposta.status === 204) {
     alert('Produto removido com sucesso.');
     await carregarProdutos();
-  }else{
+  } else {
     const erro = await resposta.json();
     alert('Erro: ' + erro.erro)
   }
